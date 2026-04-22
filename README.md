@@ -112,6 +112,20 @@ Latest recorded metrics from the local run:
 - `Average PSNR: 22.5720`
 - `Average SSIM: 0.6804`
 
+## Sample Results
+
+Single-image demo result:
+
+![Single Image Demo Comparison](assets/results/sample_app_comparison.png)
+
+Generated derained output:
+
+![Single Image Demo Output](assets/results/sample_app_result.png)
+
+Test-set comparison example:
+
+![Test Set Comparison](assets/results/test_comparison_100.png)
+
 ## Demo App
 
 Run deraining on a single image:

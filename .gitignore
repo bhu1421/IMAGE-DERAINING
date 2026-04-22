@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+Rain100L/
+outputs/
+
+.DS_Store
+Thumbs.db

@@ -1,15 +1,20 @@
 import os
 import re
+from pathlib import Path
+
 import cv2
 import numpy as np
 from torch.utils.data import Dataset
 
+from src.deraining.config import IMAGE_SIZE
+
 
 class Rain100LDataset(Dataset):
     def __init__(self, rainy_dir, clean_dir, transform=None):
-        self.rainy_dir = rainy_dir
-        self.clean_dir = clean_dir
+        self.rainy_dir = Path(rainy_dir)
+        self.clean_dir = Path(clean_dir)
         self.transform = transform
+        self._validate_directories()
         self.image_pairs = self._build_image_pairs()
 
     def __len__(self):
@@ -17,20 +22,27 @@ class Rain100LDataset(Dataset):
 
     def __getitem__(self, idx):
         rainy_path, clean_path = self.image_pairs[idx]
-        rainy = cv2.imread(rainy_path)
-        clean = cv2.imread(clean_path)
+        rainy = cv2.imread(os.fspath(rainy_path))
+        clean = cv2.imread(os.fspath(clean_path))
+        if rainy is None or clean is None:
+            raise FileNotFoundError(f"Could not read image pair: {rainy_path}, {clean_path}")
+
         rainy = cv2.cvtColor(rainy, cv2.COLOR_BGR2RGB)
         clean = cv2.cvtColor(clean, cv2.COLOR_BGR2RGB)
-        # Resize
-        rainy = cv2.resize(rainy, (256, 256))
-        clean = cv2.resize(clean, (256, 256))
-        # Normalize to [0,1]
+        rainy = cv2.resize(rainy, IMAGE_SIZE)
+        clean = cv2.resize(clean, IMAGE_SIZE)
         rainy = rainy.astype(np.float32) / 255.0
         clean = clean.astype(np.float32) / 255.0
+
         if self.transform:
             rainy = self.transform(rainy)
             clean = self.transform(clean)
         return rainy, clean
+
+    def _validate_directories(self):
+        for directory in (self.rainy_dir, self.clean_dir):
+            if not directory.exists():
+                raise FileNotFoundError(f"Dataset directory not found: {directory}")
 
     def _build_image_pairs(self):
         rainy_images = self._map_images_by_id(self.rainy_dir)
@@ -52,11 +64,10 @@ class Rain100LDataset(Dataset):
 
     def _map_images_by_id(self, directory):
         image_map = {}
-        for name in os.listdir(directory):
-            path = os.path.join(directory, name)
-            if not os.path.isfile(path):
+        for path in directory.iterdir():
+            if not path.is_file():
                 continue
-            image_id = self._extract_image_id(name)
+            image_id = self._extract_image_id(path.name)
             if image_id is None:
                 continue
             image_map[image_id] = path
@@ -68,3 +79,4 @@ class Rain100LDataset(Dataset):
         if match is None:
             return None
         return int(match.group(1))
+
